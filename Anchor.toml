@@ -1,0 +1,35 @@
+[features]
+seeds = true
+skip-lint = false
+
+[toolchain]
+anchor_version = "0.28.0" # `anchor-cli` version to use
+solana_version = "1.16.27" # Solana version to use
+
+[workspace]
+members = [
+    "programs/daniel-swap-program",
+]
+
+[registry]
+url = "https://api.apr.dev"
+
+[provider]
+cluster = "localnet"
+# cluster = "devnet"
+wallet = "~/.config/solana/id.json"
+
+[programs.localnet]
+daniel_swap_program = "4X1idCYPtEcmv7F6nn9Te1xzjTtPNm5JiR4f9ZUuGAvd"
+
+[programs.devnet]
+daniel_swap_program = "4X1idCYPtEcmv7F6nn9Te1xzjTtPNm5JiR4f9ZUuGAvd"
+
+[scripts]
+test = "yarn run ts-mocha -p ./tsconfig.json -t 1000000 tests/*.ts"
+
+[test]
+startup_wait = 10000
+
+[test.validator]
+url = "https://api.mainnet-beta.solana.com"

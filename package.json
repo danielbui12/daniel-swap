@@ -1,0 +1,34 @@
+{
+    "name": "daniel-swap",
+    "version": "0.0.1",
+    "description": "",
+    "author": {
+        "email": "huytung139@gmail.com",
+        "name": "danielbui12",
+        "url": "https://github.com/danielbui12"
+    },
+    "private": true,
+    "license": "UNLICENSED",
+    "scripts": {
+        "lint:fix": "prettier */*.js \"*/**/*{.js,.ts}\" -w",
+        "lint": "prettier */*.js \"*/**/*{.js,.ts}\" --check"
+    },
+    "dependencies": {
+        "@coral-xyz/anchor": "^0.28.0",
+        "@metaplex-foundation/js": "^0.18.3",
+        "@metaplex-foundation/mpl-token-metadata": "^2.9.0",
+        "@solana/spl-token": "^0.3.7"
+    },
+    "devDependencies": {
+        "@types/bn.js": "^5.1.5",
+        "@types/chai": "^4.3.4",
+        "@types/chai-as-promised": "^7.1.5",
+        "@types/mocha": "^10.0.1",
+        "chai": "^4.3.7",
+        "chai-as-promised": "^7.1.1",
+        "mocha": "^10.0.0",
+        "prettier": "^3.2.5",
+        "ts-mocha": "^10.0.0",
+        "typescript": "^5.4.5"
+    }
+}

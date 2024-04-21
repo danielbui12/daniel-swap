@@ -1,0 +1,21 @@
+[package]
+name = "daniel-swap-program"
+version = "0.1.0"
+description = "Daniel's Swap Program"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "daniel_swap_program"
+
+[features]
+default = ["devnet"]
+devnet = []
+no-entrypoint = []
+no-idl = []
+no-log-ix-name = []
+cpi = ["no-entrypoint"]
+
+[dependencies]
+anchor-lang = { version = "0.28.0", features = ["init-if-needed"] }
+anchor-spl = "0.28.0"

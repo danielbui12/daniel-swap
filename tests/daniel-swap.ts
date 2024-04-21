@@ -48,6 +48,7 @@ describe('Daniel Swap Program', async () => {
     const {
         expectIxToSucceed,
         expectIxToFailWithError,
+        requestAirdrop,
     } = boilerPlateReduction(provider.connection, creator);
 
     // Used as a flag to only initialize the Liquidity Pool once
@@ -149,7 +150,37 @@ describe('Daniel Swap Program', async () => {
     }
 
     it('Get Liquidity Pool Data', async () => await getPoolData(true))
-    
+
+
+    const mintTokenBeforeSwap = async () => {
+        for (const asset of assets) {
+            const mintAmount = 100 * 10 ** asset.decimals;
+            const mint = asset.address;
+            const destination = getAssociatedTokenAddressSync(
+                mint,
+                swapper.publicKey,
+            );
+
+            await expect(
+                    asset.address.equals(W_SOLANA_MINT) ?
+                        createWrappedNativeAccount(
+                            provider.connection,
+                            swapper,
+                            swapper.publicKey,
+                            mintAmount,
+                        ) :
+                        mintTo(
+                            provider.connection,
+                            swapper,
+                            mint,
+                            destination,
+                            payer,
+                            mintAmount,
+                        )
+            ).to.be.fulfilled;
+        }
+    }
+
     async function trySwapWithConstantProductFormula(
         receive: {
             name: string
@@ -165,29 +196,6 @@ describe('Daniel Swap Program', async () => {
         },
         payAmount: number
     ) {
-        const swapperPayAta = getAssociatedTokenAddressSync(
-            pay.address,
-            swapper.publicKey,
-        );
-        const payAmountWDecimals = payAmount * 10 ** pay.decimals;
-        await expect(
-            pay.address.equals(W_SOLANA_MINT) ?
-                createWrappedNativeAccount(
-                    provider.connection,
-                    swapper,
-                    swapper.publicKey,
-                    payAmountWDecimals,
-                ) :
-                mintTo(
-                    provider.connection,
-                    payer,
-                    pay.address,
-                    swapperPayAta,
-                    payer,
-                    payAmountWDecimals
-                )
-        ).to.be.fulfilled;
-        await sleepSeconds(2);
         const initialK = await getPoolData(false)
         await logPreSwap(
             provider.connection,
@@ -234,32 +242,10 @@ describe('Daniel Swap Program', async () => {
             decimals: number
             address: PublicKey
         },
-        payAmount: number
+        payAmount: number,
     ) {
-        const swapperPayAta = getAssociatedTokenAddressSync(
-            pay.address,
-            swapper.publicKey,
-        );
-        const payAmountWDecimals = payAmount * 10 ** pay.decimals;
-        // mint pay token for swapper
-        await expect(
-            pay.address.equals(W_SOLANA_MINT) ?
-                createWrappedNativeAccount(
-                    provider.connection,
-                    swapper,
-                    swapper.publicKey,
-                    payAmountWDecimals,
-                ) :
-                mintTo(
-                    provider.connection,
-                    payer,
-                    pay.address,
-                    swapperPayAta,
-                    payer,
-                    payAmountWDecimals
-                )
-        ).to.be.fulfilled;
         await sleepSeconds(2);
+
         await logPreSwap(
             provider.connection,
             swapper.publicKey,
@@ -290,37 +276,74 @@ describe('Daniel Swap Program', async () => {
         )
     }
 
-    for (let x = 0; x < 2; x++) {
-        it('Try Swap Constant Price', async () => {
-            const receiveAssetIndex = x % 2
-            console.log('try swap to', assets[receiveAssetIndex].name);
+    it('Try Swap Constant Price wSOL/MOVE', async () => {
+        await mintTokenBeforeSwap();
+        const receiveAssetIndex = 0
+        console.log('try swap to', assets[receiveAssetIndex].name);
 
-            const payAssetIndex = (x + 1) % 2;
-            console.log('try swap from', assets[payAssetIndex].name);
-            // Pay amount can't be zero
-            const payAmount = getRandomInt(1, assets[payAssetIndex].quantity / 10);
-            console.log('try swap amount:', payAmount);
-            await trySwapWithConstantPriceFormula(
-                assets[receiveAssetIndex],
-                assets[payAssetIndex],
-                payAmount
-            )
-        })
+        const payAssetIndex = 1
+        console.log('try swap from MOVE/wSOL', assets[payAssetIndex].name);
+        // Pay amount can't be zero
+        const payAmount = getRandomInt(1, 20);
+        console.log('try swap amount:', payAmount);
+        await trySwapWithConstantPriceFormula(
+            assets[receiveAssetIndex],
+            assets[payAssetIndex],
+            payAmount
+        )
+    })
 
-        // it('Try Swap Constant Product', async () => {
-        //     const receiveAssetIndex = x % 2
-        //     console.log('try swap to', assets[receiveAssetIndex].name);
+    // it('Try Swap Constant Price MOVE/wSOL', async () => {
+    // await mintTokenBeforeSwap();
+    //     const receiveAssetIndex = 1
+    //     console.log('try swap to', assets[receiveAssetIndex].name);
 
-        //     const payAssetIndex = (x + 1) % 2;
-        //     console.log('try swap from', assets[payAssetIndex].name);
-        //     // Pay amount can't be zero
-        //     const payAmount = getRandomInt(1, assets[payAssetIndex].quantity);
-        //     console.log('try swap amount:', payAmount);
-        //     await trySwapWithConstantProductFormula(
-        //         assets[receiveAssetIndex],
-        //         assets[payAssetIndex],
-        //         payAmount
-        //     )
-        // })
-    }
+    //     const payAssetIndex = 0
+    //     console.log('try swap from', assets[payAssetIndex].name);
+    //     // Pay amount can't be zero
+    //     const payAmount = getRandomInt(1, 20);
+    //     console.log('try swap amount:', payAmount);
+    //     await trySwapWithConstantPriceFormula(
+    //         assets[receiveAssetIndex],
+    //         assets[payAssetIndex],
+    //         payAmount
+    //     )
+    // })
+
+    // it('Try Swap Constant Product', async () => {
+    //     await mintTokenBeforeSwap();
+
+    //     const receiveAssetIndex = 0;
+    //     console.log('try swap to', assets[receiveAssetIndex].name);
+
+    //     const payAssetIndex = 1;
+    //     console.log('try swap from', assets[payAssetIndex].name);
+    //     // Pay amount can't be zero
+    //     const payAmount = getRandomInt(1, assets[payAssetIndex].quantity / 10);
+    //     console.log('try swap amount:', payAmount);
+    //     await trySwapWithConstantProductFormula(
+    //         assets[receiveAssetIndex],
+    //         assets[payAssetIndex],
+    //         payAmount
+    //     )
+    // })
+
+
+    // it('Try Swap Constant Product', async () => {
+    //     await mintTokenBeforeSwap();
+
+    //     const receiveAssetIndex = 1;
+    //     console.log('try swap to', assets[receiveAssetIndex].name);
+
+    //     const payAssetIndex = 0;
+    //     console.log('try swap from', assets[payAssetIndex].name);
+    //     // Pay amount can't be zero
+    //     const payAmount = getRandomInt(1, 20);
+    //     console.log('try swap amount:', payAmount);
+    //     await trySwapWithConstantProductFormula(
+    //         assets[receiveAssetIndex],
+    //         assets[payAssetIndex],
+    //         payAmount
+    //     )
+    // })
 })

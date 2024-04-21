@@ -78,30 +78,4 @@ describe("Environment", () => {
             }
         }
     });
-
-    // it("Mint to Wallet's ATAs", async function () {
-    //     for (const asset of assets_conf) {
-    //         const mintAmount = defaultMintAmount * 10n ** BigInt(asset.decimals);
-    //         const mint = new PublicKey(asset.keypair.publicKey);
-    //         for (const account of accounts) {
-    //             const destination = getAssociatedTokenAddressSync(
-    //                 mint,
-    //                 account.publicKey,
-    //             );
-
-    //             await expect(
-    //                 mintTo(provider.connection, payer, mint, destination, payer, mintAmount),
-    //             ).to.be.fulfilled;
-
-    //             const { amount } = await getAccount(provider.connection, destination);
-    //             console.log(
-    //                 "account:",
-    //                 account.publicKey.toString(),
-    //                 "amount",
-    //                 amount.toString(),
-    //             );
-    //             expect(amount).equals(mintAmount);
-    //         }
-    //     }
-    // });
 });

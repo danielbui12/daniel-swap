@@ -1,7 +1,6 @@
-import { Connection } from "@solana/web3.js";
+import { Connection, PublicKey } from "@solana/web3.js";
 import { DANIEL_SWAP_PROGRAM_ID, createDanielSwapProgram } from "../program";
-import { PublicKey } from "@metaplex-foundation/js";
-import { getAssociatedTokenAddressSync, getMultipleAccounts, Account as TokenAccount } from "@solana/spl-token";
+import { getAccount, getAssociatedTokenAddressSync, Account as TokenAccount } from "@solana/spl-token";
 
 export interface LiquidityPool {
     assets: PublicKey[];
@@ -40,4 +39,17 @@ export async function fetchPool(
     ).account.liquidityPool.fetch(poolAddress);
 
     return data as LiquidityPool;
+}
+
+export async function fetchPoolData(connection: Connection, poolAddress: PublicKey): Promise<TokenAccount[]> {
+    const pool = await fetchPool(
+        connection,
+        poolAddress,
+    );
+    const poolTokenAccounts = await Promise.all(pool.assets.map((p) => {
+        const ata = getAssociatedTokenAddressSync(p, poolAddress, true);
+        return getAccount(connection, ata);
+    }));
+
+    return poolTokenAccounts;
 }

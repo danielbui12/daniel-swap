@@ -4,6 +4,12 @@ import React from "react";
 import Logo from "@/app/assets/images/logo.jpeg";
 import Image from "next/image";
 import dynamic from "next/dynamic";
+import { Button, notification } from "antd";
+import { getAssociatedTokenAddressSync, mintTo } from "@solana/spl-token";
+import { useConnection, useWallet } from "@solana/wallet-adapter-react";
+import { MOVE_AUTHORITY, MOVE_PROGRAM_ID } from "../constants";
+import { useWalletModal } from "@solana/wallet-adapter-react-ui";
+import { PublicKey } from '@solana/web3.js';
 
 const ReactUIWalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -11,6 +17,31 @@ const ReactUIWalletMultiButtonDynamic = dynamic(
 );
 
 function Header() {
+    const { connection } = useConnection()
+    const { publicKey, connected } = useWallet()
+    const { setVisible, visible } = useWalletModal()
+    const onRequestMOVE = async () => {
+        if (!connected && !visible) {
+            setVisible(true);
+            return;
+        }
+        
+        const destination = getAssociatedTokenAddressSync(MOVE_PROGRAM_ID, publicKey as PublicKey);        
+        await mintTo(
+            connection,
+            MOVE_AUTHORITY,
+            MOVE_PROGRAM_ID,
+            destination,
+            MOVE_AUTHORITY.publicKey,
+            100n * 10n ** 9n,
+        )
+        .then((txSig) => notification.success({
+            message: `Minted 100 MOVE for ${publicKey?.toString()}`,
+            description: <a href={`https://solscan.io/tx/${txSig}?cluster=devnet`} target="_blank">View the transaction</a>
+        }))
+        .catch((err) => console.log(err));
+        
+    }
     return (
         <header className="w-full mb-5">
             <div 
@@ -26,6 +57,11 @@ function Header() {
                         alt="logo"
                         className=""
                     />
+                </div>
+                <div>
+                    <Button onClick={onRequestMOVE}>
+                        Request MOVE
+                    </Button>
                 </div>
                 <div>
                     <ReactUIWalletMultiButtonDynamic />

@@ -99,6 +99,7 @@ export const boilerPlateReduction = (
         }
         if (units) tx.add(ComputeBudgetProgram.setComputeUnitLimit({ units }));
         try {
+            console.log('sending transaction');
             return await sendAndConfirmTransaction(connection, tx, signers);
         } catch (error: any) {
             throw new SendIxError(error);

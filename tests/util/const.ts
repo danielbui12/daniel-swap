@@ -2,20 +2,22 @@ import { PublicKey } from "@metaplex-foundation/js";
 import { Keypair } from "@solana/web3.js";
 import fs from 'fs';
 
-// (Name, decimals, description, URI, decimals, amount, Keypair)
+// (Name, Symbol, description, URI, decimals, amount, Keypair)
 export const ASSETS: [string, string, string, string, number, number, Keypair][] = [
     [
         'MOVE',
         'MOVE',
         '',
-        'https://arweave.net/ArreGQ6DYdIPGs_KiwVXE7AMVclLliICTlls6Ff8DbY',
+        'https://raw.githubusercontent.com/danielbui12/remitano-interview-round2/master/tests/util/asset-metadata.json',
         9,
         10000,
         Keypair.fromSecretKey(Uint8Array.from([
-            129, 227, 235, 186, 104, 13, 185, 244, 16, 185, 108, 95, 83, 214, 115,
-            244, 194, 207, 250, 150, 180, 86, 70, 198, 97, 40, 71, 3, 26, 185, 48,
-            222, 226, 136, 99, 75, 72, 182, 148, 76, 211, 140, 155, 55, 62, 44, 71,
-            127, 72, 42, 114, 4, 86, 16, 64, 54, 37, 143, 66, 162, 104, 70, 220, 47,
+            32, 88, 188, 246, 199, 254, 9, 244, 49, 230,
+            67, 203, 42, 35, 143, 229, 130, 198, 161, 249,
+            6, 50, 187, 97, 38, 15, 242, 118, 181, 231, 121,
+            75, 140, 74, 11, 5, 140, 55, 32, 162, 140, 21, 40,
+            12, 193, 184, 244, 171, 109, 3, 204, 121, 220, 55,
+            132, 169, 216, 254, 66, 231, 128, 42, 209, 1
         ]))
     ],
 ]

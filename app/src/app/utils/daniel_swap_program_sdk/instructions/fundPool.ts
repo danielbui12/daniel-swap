@@ -1,7 +1,7 @@
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js'
+import { Connection, PublicKey, SystemProgram } from '@solana/web3.js'
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
 import { createDanielSwapProgram } from '../program'
-import { BN } from 'bn.js'
+import { BN } from '@coral-xyz/anchor'
 
 export async function fundPool(
     connection: Connection,

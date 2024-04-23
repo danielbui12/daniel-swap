@@ -1,7 +1,7 @@
 import { Connection, PublicKey } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
 import { createDanielSwapProgram } from '../program'
-import { BN } from 'bn.js';
+import { BN } from '@coral-xyz/anchor'
 
 export async function swapUsingConstantProductFormula(
     connection: Connection,

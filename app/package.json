@@ -15,6 +15,7 @@
     "@solana/wallet-adapter-react": "^0.15.35",
     "@solana/wallet-adapter-react-ui": "^0.9.34",
     "@solana/wallet-adapter-wallets": "^0.19.23",
+    "@types/bn.js": "^5.1.5",
     "antd": "^5.1.5",
     "next": "14.2.2",
     "react": "^18",

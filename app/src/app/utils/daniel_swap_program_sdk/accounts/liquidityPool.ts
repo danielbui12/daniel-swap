@@ -47,7 +47,7 @@ export async function fetchPoolData(connection: Connection, poolAddress: PublicK
         poolAddress,
     );
     const poolTokenAccounts = await Promise.all(pool.assets.map((p) => {
-        const ata = getAssociatedTokenAddressSync(p, poolAddress, true);
+        const ata = getAssociatedTokenAddressSync(p, poolAddress, true);        
         return getAccount(connection, ata);
     }));
 

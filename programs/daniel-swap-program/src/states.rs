@@ -54,6 +54,15 @@ pub trait LiquidityPoolAccount<'info> {
         system_program: &Program<'info, System>,
         token_program: &Program<'info, Token>,
     ) -> Result<()>;
+     fn claim(
+        &mut self,
+        token: (
+            &Account<'info, TokenAccount>,
+            &Account<'info, TokenAccount>,
+            u64,
+        ),
+        token_program: &Program<'info, Token>,
+    ) -> Result<()>;
     fn process_swap_constant_product_formula(
         &mut self,
         receive: (
@@ -163,6 +172,20 @@ impl<'info> LiquidityPoolAccount<'info> for Account<'info, LiquidityPool> {
         let (mint, from, to, amount) = deposit;
         self.add_asset(mint.key(), authority, system_program)?;
         process_transfer_to_pool(from, to, amount, authority, token_program)?;
+        Ok(())
+    }
+
+    fn claim(
+        &mut self,
+        token: (
+            &Account<'info, TokenAccount>,
+            &Account<'info, TokenAccount>,
+            u64,
+        ),
+        token_program: &Program<'info, Token>,
+    ) -> Result<()> {
+        let (from, to, amount) = token;
+        process_transfer_from_pool(from, to, amount, self, token_program)?;
         Ok(())
     }
 

@@ -1,9 +1,11 @@
 import { expect } from 'chai';
-import { createWrappedNativeAccount } from "@solana/spl-token";
+import { createWrappedNativeAccount, NATIVE_MINT } from "@solana/spl-token";
 import { createPool, fundPool } from "../daniel_swap_program_sdk";
-import { ASSETS, W_SOLANA_MINT } from "../tests/util/const";
+import { ASSETS } from "../tests/util/const";
 import { boilerPlateReduction } from "../tests/util/utils";
 import { connection, payer, poolAddress } from "./utils";
+import { claimPool } from '../daniel_swap_program_sdk/instructions/claimPool';
+import { PublicKey } from '@metaplex-foundation/js';
 
 async function main() {
     const {
@@ -22,28 +24,37 @@ async function main() {
         name: 'wSOL',
         quantity: 10,
         decimals: 9,
-        address: W_SOLANA_MINT
+        address: NATIVE_MINT
     });
 
-    await expectIxToSucceed(createPool(connection, payer, poolAddress), payer);
-    for (const asset of assets) {
-        if (asset.address.equals(W_SOLANA_MINT)) {
-            await expect(createWrappedNativeAccount(
-                connection,
-                payer,
-                payer.publicKey,
-                asset.quantity * 10 ** asset.decimals,
-            )).to.be.fulfilled;
-        }
-        await expectIxToSucceed(fundPool(
-            connection,
-            payer,
-            poolAddress,
-            asset.address,
-            asset.quantity,
-            asset.decimals
-        ), payer);
-    }
+    await expectIxToSucceed(claimPool(
+        connection,
+        payer.publicKey,
+        poolAddress,
+        new PublicKey('ASdZagtrNjFoFTfd1kDKeFxFgbPenuFbepd1EVYXsyt4'),
+        900,
+        assets[0].decimals
+    ), payer);
+
+    // await expectIxToSucceed(createPool(connection, payer, poolAddress), payer);
+    // for (const asset of assets) {
+    //     if (asset.address.equals(NATIVE_MINT)) {
+    //         await expect(createWrappedNativeAccount(
+    //             connection,
+    //             payer,
+    //             payer.publicKey,
+    //             asset.quantity * 10 ** asset.decimals,
+    //         )).to.be.fulfilled;
+    //     }
+    //     await expectIxToSucceed(fundPool(
+    //         connection,
+    //         payer,
+    //         poolAddress,
+    //         asset.address,
+    //         asset.quantity,
+    //         asset.decimals
+    //     ), payer);
+    // }
 }
 
 main()

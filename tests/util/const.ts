@@ -10,7 +10,7 @@ export const ASSETS: [string, string, string, string, number, number, Keypair][]
         '',
         'https://raw.githubusercontent.com/danielbui12/remitano-interview-round2/master/tests/util/asset-metadata.json',
         9,
-        10000,
+        1000,
         Keypair.fromSecretKey(Uint8Array.from([
             32, 88, 188, 246, 199, 254, 9, 244, 49, 230,
             67, 203, 42, 35, 143, 229, 130, 198, 161, 249,
@@ -50,5 +50,3 @@ export const DANIEL_SWAP_PROGRAM_KEYPAIR = Keypair.fromSecretKey(
         )
     )
 );
-
-export const W_SOLANA_MINT = new PublicKey("So11111111111111111111111111111111111111112");

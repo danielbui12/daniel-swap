@@ -10,6 +10,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MOVE_AUTHORITY, MOVE_PROGRAM_ID } from "../constants";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
 import { PublicKey } from '@solana/web3.js';
+import Link from "next/link";
 
 const ReactUIWalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -58,10 +59,16 @@ function Header() {
                         className=""
                     />
                 </div>
-                <div>
+                <div className="flex gap-5 items-center">
                     <Button onClick={onRequestMOVE}>
                         Request MOVE
                     </Button>
+                    <Link href="/">
+                        Swap
+                    </Link>
+                    <Link href="/liquidity">
+                        Fund Liquidity
+                    </Link>
                 </div>
                 <div>
                     <ReactUIWalletMultiButtonDynamic />

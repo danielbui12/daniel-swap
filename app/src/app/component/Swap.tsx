@@ -1,37 +1,23 @@
 "use client"
 
-import { Button, Image, Input, Switch } from 'antd'
-import React, { useEffect, useMemo, useState } from 'react'
+import { Button, Image, Input, Switch, message, notification } from 'antd'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import tokenList from '@/app/assets/data/tokens.json'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
 import { ArrowDownOutlined } from '@ant-design/icons'
 import BigNumber from "bignumber.js";
-import { deriveLiquidityPoolPDA, fetchPoolData, numberWDecimals, numberWODecimals } from '../utils'
-import {Account as TokenAccount } from "@solana/spl-token";
-
-type NumberState = number | undefined;
-
-const CONSTANT_PRICE_TICKET_TO_RATIO = {
-    "SOL": [10, 1],
-    "MOVE": [1, 10],
-}
-
-
-/**
- * Pool has 10 SOL, 10000 MOVE
- * let SOL/MOVE be $1000
- */
-const CONSTANT_PRODUCT_TICKET_TO_RATIO = {
-    "SOL": 1000,
-    "MOVE": 0.001,
-}
+import { CONSTANT_PRICE_TICKET_TO_RATIO, CONSTANT_PRODUCT_TICKET_TO_RATIO, deriveLiquidityPoolPDA, fetchPoolData, numberWDecimals, numberWODecimals, swapUsingConstantPriceFormula, swapUsingConstantProductFormula } from '../utils'
+import {Account as TokenAccount, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { PublicKey, Transaction } from '@solana/web3.js'
+import { createWrappedSolanaIfNeeded } from '../utils/createWrappedSolana'
+import { confirmTransactionFromFrontend, verifyTransaction } from '../utils/transactionSigner'
 
 function Swap() {
-    const { connected } = useWallet();
+    const { connected, publicKey, wallet, signTransaction } = useWallet();
     const { connection } = useConnection();
 
-    const [tokenOneAmount, setTokenOneAmount] = useState<NumberState>(undefined);
-    const [tokenTwoAmount, setTokenTwoAmount] = useState<NumberState | string>(undefined);
+    const [tokenOneAmount, setTokenOneAmount] = useState<string | undefined>(undefined);
+    const [tokenTwoAmount, setTokenTwoAmount] = useState<string | undefined>(undefined);
     const [tokenOne, setTokenOne] = useState(tokenList[0]);
     const [tokenTwo, setTokenTwo] = useState(tokenList[1]);
     const [poolData, setPoolData] = useState<TokenAccount[]>([]);
@@ -46,8 +32,7 @@ function Swap() {
     const tokenOneInPool = poolData.find((asset) => tokenOne.address === asset.mint.toString());
     const tokenTwoInPool = poolData.find((asset) => tokenTwo.address === asset.mint.toString());
 
-    const onChangeAmount = (value: number, _isUsingConstantProduct = isUsingConstantProduct) => {
-        if (value < 0) value = 0;
+    const onChangeAmount = (value: string, _isUsingConstantProduct = isUsingConstantProduct) => {
         if (errorMsg) setErrorMsg('')
         if (constantProductPriceImpact) setConstantProductPriceImpact('')
 
@@ -62,7 +47,7 @@ function Swap() {
             const denominator = new BigNumber(constantPriceRatio[1])
             const receivingAmount = amountWDecimals.multipliedBy(numerator).div(denominator);
             const normalizedAmount = numberWODecimals(receivingAmount, tokenTwo.decimals)          
-            setTokenTwoAmount(normalizedAmount)
+            setTokenTwoAmount(normalizedAmount.toString())
         } else {
             const big_b = new BigNumber(tokenTwoInPool?.amount?.toString() || "0");
             const big_a = new BigNumber(tokenOneInPool?.amount?.toString() || "0");
@@ -80,9 +65,10 @@ function Swap() {
 
             const diff = amountWDecimals.dividedBy(b)
             const original = constantProductRatio
+            const priceImpact = diff.minus(original).dividedBy(original).multipliedBy(100);
             
             setConstantProductPriceImpact(
-                "Price Impact: " + diff.minus(original).dividedBy(original).multipliedBy(100).toFixed(2)
+                "Price Impact: " + (priceImpact.toNumber() >= 100 ? "> 99.99" : priceImpact.toFixed(2)) + "%"
             )
         }
     }
@@ -90,27 +76,99 @@ function Swap() {
     function switchTokens() {
         setTokenOneAmount(undefined);
         setTokenTwoAmount(undefined);
+        errorMsg && setErrorMsg('')
+        constantProductPriceImpact && setConstantProductPriceImpact('')
         const one = tokenOne;
         const two = tokenTwo;
         setTokenOne(two);
         setTokenTwo(one);
     }
     
-    useEffect(() => {
-        async function init() {
+    const onFetchPoolData = useCallback(async () => {
             const poolAddress = deriveLiquidityPoolPDA()
-            const poolData = await fetchPoolData(connection, poolAddress);
+            const poolData = await fetchPoolData(connection, poolAddress)
+                .catch((err) => {
+                    console.error('fetch pool failed:', err);
+                    return [];
+                });
             if (poolData.length > 0) {
                 setPoolData(poolData)
             }
-        }
-
-        init();
     }, [connection])
 
-    const onSwapConstantPrice = () => {
-        if (tokenOneAmount && tokenTwoAmount) {
-            console.log(tokenOneAmount, tokenTwoAmount)
+    useEffect(() => {
+        onFetchPoolData()
+    }, [onFetchPoolData])
+
+    const onSwapConstantPrice = async () => {
+        try {
+            const swapAmount = numberWDecimals(Number(tokenOneAmount), tokenOne.decimals);
+            const tokenOnePublicKey = new PublicKey(tokenOne.address);
+            const ata = getAssociatedTokenAddressSync(tokenOnePublicKey, publicKey as PublicKey);
+            const tokenAccount = await getAccount(connection, ata).catch(() => ({ amount: 0 }))
+            const isNotEnoughToken = swapAmount.isGreaterThan(new BigNumber(tokenAccount.amount.toString()));
+            
+            if (tokenOne.address === tokenList[0].address) {
+                // wSOL
+                const error = await createWrappedSolanaIfNeeded(
+                    connection,
+                    publicKey as PublicKey,
+                    swapAmount,
+                    { wallet, signTransaction }
+                )
+                if (error) {
+                    notification.error(error)
+                    return;
+                }
+            } else if (isNotEnoughToken) {
+                // not enough MOVE
+                notification.error({
+                    message: "Not enough MOVE",
+                })
+                return;
+            }
+
+            /// sending transaction
+            const poolAddress = deriveLiquidityPoolPDA()
+            const swapIx = await (
+                isUsingConstantProduct ? 
+                    swapUsingConstantProductFormula :
+                    swapUsingConstantPriceFormula
+            )(
+                connection, publicKey as PublicKey,
+                poolAddress, new PublicKey(tokenTwo.address),
+                new PublicKey(tokenOne.address), swapAmount.toString(),
+            );
+
+            const ltsBlock = await connection.getLatestBlockhash();
+            const swapTx = new Transaction({
+                ...ltsBlock,
+                feePayer: publicKey
+            }).add(swapIx)
+            const swapTxSignature = await confirmTransactionFromFrontend(connection, swapTx, {
+                wallet,
+                signTransaction,
+            });
+            const isSwapFailed = await verifyTransaction(connection, swapTxSignature)
+            if (isSwapFailed) {
+                notification.error({
+                    message: "Failed to Swap",
+                })
+                return;
+            }
+            notification.success({
+                message: `Swap from ${tokenOne.ticker} to ${tokenTwo.ticker} Successfully`,
+                description: <a href={`https://solscan.io/tx/${swapTxSignature}?cluster=devnet`} target="_blank">View the transaction</a>
+            })
+            await onFetchPoolData();
+        } catch (error: any) {
+            if (error.message === "User rejected the request.") {
+                return;
+            }
+            console.log({error});
+            notification.error({
+                message: "Unknown error",
+            })
         }
     }
 
@@ -132,7 +190,7 @@ function Swap() {
             <div 
                 className='w-[600px] bg-[#0E111B] border-[2px] border-[#21273a] min-h-[300px] rounded-xl flex flex-col justify-start items-start pl-7 pr-7 py-2'
             >
-                <div className="flex justify-between items-center w-full">
+                <div className="flex justify-between items-center w-full mb-5">
                     <h2 className='text-3xl'>
                         Swap
                     </h2>
@@ -142,7 +200,7 @@ function Swap() {
                         value={isUsingConstantProduct}
                         onChange={(val) => {
                             setIsUsingConstantProduct(val)
-                            onChangeAmount(tokenOneAmount as number, val)
+                            if (tokenOneAmount) onChangeAmount(tokenOneAmount, val)
                         }}
                     />
                     {/* <Popover
@@ -170,9 +228,14 @@ function Swap() {
                 <div className='relative'>
                     <Input
                         placeholder="0"
-                        type='number'
                         value={tokenOneAmount}
-                        onChange={(e) => onChangeAmount(Number(e.target.value))}
+                        onChange={(e) => {
+                            let val = Number(e.target.value);
+                            if (isNaN(val) || val < 0) {
+                                e.target.value = '0'
+                            }
+                            onChangeAmount(e.target.value)
+                        }}
                     />
                     <Input placeholder="0" value={tokenTwoAmount} disabled={true} />
                     <div 

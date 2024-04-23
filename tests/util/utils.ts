@@ -162,8 +162,3 @@ export const sleepSeconds = async (s: number) =>
 export function getRandomInt(min: number, max: number): number {
     return Math.floor(Math.random() * (max - min + 1) + min);
 }
-
-/**
- * TODO: calculate price impact
- * let 1 SOL = 10 MOVE
- */

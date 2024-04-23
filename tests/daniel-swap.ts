@@ -11,11 +11,11 @@ import {
     logPostSwap,
     logPreSwap,
 } from './util/log'
-import { CREATOR_KEYPAIR, SWAPPER_KEYPAIR, ASSETS, W_SOLANA_MINT } from './util/const'
+import { CREATOR_KEYPAIR, SWAPPER_KEYPAIR, ASSETS } from './util/const'
 import { deriveLiquidityPoolPDA, fetchPool } from '../daniel_swap_program_sdk/accounts/liquidityPool'
 import { expect } from 'chai'
 import { boilerPlateReduction, getRandomInt, sleepSeconds } from './util/utils'
-import { createWrappedNativeAccount, getAccount, getAssociatedTokenAddressSync, mintTo, transfer } from '@solana/spl-token'
+import { createWrappedNativeAccount, getAccount, getAssociatedTokenAddressSync, mintTo, NATIVE_MINT } from '@solana/spl-token'
 
 /**
  * Our main unit tests module
@@ -42,7 +42,7 @@ describe('Daniel Swap Program', async () => {
         name: 'wSOL',
         quantity: 100,
         decimals: 9,
-        address: W_SOLANA_MINT
+        address: NATIVE_MINT
     });
 
     const {
@@ -91,7 +91,7 @@ describe('Daniel Swap Program', async () => {
             console.log(`${asset.name} ata`, destination.toString(), 'of', creator.publicKey.toString());
             const mintAmount = asset.quantity * 10 ** asset.decimals;
             await expect(
-                mint.equals(W_SOLANA_MINT) ? 
+                mint.equals(NATIVE_MINT) ? 
                     createWrappedNativeAccount(
                         provider.connection,
                         creator,
@@ -161,7 +161,7 @@ describe('Daniel Swap Program', async () => {
             );
 
             await expect(
-                asset.address.equals(W_SOLANA_MINT) ?
+                asset.address.equals(NATIVE_MINT) ?
                     createWrappedNativeAccount(
                         provider.connection,
                         swapper,

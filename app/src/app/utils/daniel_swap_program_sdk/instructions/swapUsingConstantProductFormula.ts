@@ -1,21 +1,19 @@
-import { Connection, Keypair, PublicKey } from '@solana/web3.js'
+import { Connection, PublicKey } from '@solana/web3.js'
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from '@solana/spl-token'
-import { toBigIntQuantity } from '../utils/format'
 import { createDanielSwapProgram } from '../program'
 import { BN } from 'bn.js';
 
 export async function swapUsingConstantProductFormula(
     connection: Connection,
-    payer: Keypair,
+    payer: PublicKey,
     pool: PublicKey,
     receiveMint: PublicKey,
     payMint: PublicKey,
-    quantity: number,
-    decimals: number
+    quantity: string,
 ) {
     const program = createDanielSwapProgram(connection);
     return program.methods
-        .swapUsingConstantProductFormula(new BN(toBigIntQuantity(quantity, decimals).toString()))
+        .swapUsingConstantProductFormula(new BN(quantity))
         .accounts({
             pool,
             receiveMint,
@@ -26,7 +24,7 @@ export async function swapUsingConstantProductFormula(
             ),
             payerReceiveTokenAccount: getAssociatedTokenAddressSync(
                 receiveMint,
-                payer.publicKey
+                payer
             ),
             payMint,
             poolPayTokenAccount: getAssociatedTokenAddressSync(
@@ -36,9 +34,9 @@ export async function swapUsingConstantProductFormula(
             ),
             payerPayTokenAccount: getAssociatedTokenAddressSync(
                 payMint,
-                payer.publicKey
+                payer
             ),
-            payer: payer.publicKey,
+            payer: payer,
             tokenProgram: TOKEN_PROGRAM_ID,
         })
         .instruction()

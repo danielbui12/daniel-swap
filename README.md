@@ -55,9 +55,12 @@ The program utilizes Program Derived Addresses (PDAs) for various functionalitie
 To help you get started with Daniel Swap, we've provided two video demonstrations:
 
 1. **How to Swap**: This video guides you through the process of swapping tokens on the Daniel Swap DEX.
+
+[DEMO FOR SWAP](/assets/swap.mov)
+
 2. **How to Fund Pool**: This video shows you how to add liquidity to a pool, enabling others to perform swaps.
 
-(Links to the videos will be provided here)
+[DEMO FOR FUND](/assets/fund.mov)
 
 ## Disclaimer
 

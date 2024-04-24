@@ -260,6 +260,8 @@ impl<'info> LiquidityPoolAccount<'info> for Account<'info, LiquidityPool> {
         self.check_asset_key(&pay_mint.key())?;
         // Determine the amount the payer will recieve of the requested asset
         let receive_amount = constant_price_formula(
+            pool_receive.amount,
+            receive_mint.decimals,
             pay_amount,
             pay_mint.decimals,
             reward_ratio.0,
@@ -379,13 +381,19 @@ fn constant_product_formula(
 ///
 
 fn constant_price_formula(
+    pool_recieve_balance: u64,
+    receive_decimals: u8,
     pay_amount: u64,
     pay_decimals: u8,
     numerator: u8,
     denominator: u8,
 ) -> Result<u64> {
+    let pool_balance = convert_to_float(pool_recieve_balance, receive_decimals);
     let pay_amount_w_decimals = convert_to_float(pay_amount, pay_decimals);
     let receive_amount = pay_amount_w_decimals.mul(numerator as f32).div(denominator as f32);
+    if receive_amount > pool_balance {
+        return Err(DanielSwapProgramError::OverLiquidityAllocatable.into());
+    } 
     Ok(convert_from_float(receive_amount, pay_decimals))
 }
 

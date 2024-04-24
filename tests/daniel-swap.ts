@@ -48,7 +48,6 @@ describe('Daniel Swap Program', async () => {
     const {
         expectIxToSucceed,
         expectIxToFailWithError,
-        requestAirdrop,
     } = boilerPlateReduction(provider.connection, creator);
 
     // Used as a flag to only initialize the Liquidity Pool once
@@ -179,6 +178,88 @@ describe('Daniel Swap Program', async () => {
             ).to.be.fulfilled;
         }
     })
+
+    it('Fail Swap Using "Constant Price" Due to "Zero amount"', async () => {
+        const receiveAssetIndex = 0; // Assuming this is an asset index that exists
+        const payAssetIndex = 1; // Assuming this is another asset index that exists
+        const payAmount = 0;
+
+        await expectIxToFailWithError(
+            swapUsingConstantPriceFormula(
+                provider.connection,
+                swapper,
+                poolAddress,
+                assets[receiveAssetIndex].address,
+                assets[payAssetIndex].address,
+                payAmount,
+                assets[payAssetIndex].decimals
+            ),
+            "Zero amount",
+            swapper,
+        );
+    });
+
+    it('Fail Swap Using "Constant Product" Due to "Zero amount"', async () => {
+        const receiveAssetIndex = 0; // Assuming this is an asset index that exists
+        const payAssetIndex = 1; // Assuming this is another asset index that exists
+        const payAmount = 0;
+
+        await expectIxToFailWithError(
+            swapUsingConstantProductFormula(
+                provider.connection,
+                swapper,
+                poolAddress,
+                assets[receiveAssetIndex].address,
+                assets[payAssetIndex].address,
+                payAmount,
+                assets[payAssetIndex].decimals
+            ),
+            "Zero amount",
+            swapper,
+        );
+    });
+
+    it('Fail Swap Using "Constant Price" Due to "Over Invalid amount allocatable"', async () => {
+        const receiveAssetIndex = 0; // Assuming this is an asset index that exists
+        const payAssetIndex = 1; // Assuming this is another asset index that exists
+        // Set a very high pay amount, assuming the pool cannot support this swap
+        const payAmount = 500; // An exaggeratedly high amount for demonstration
+
+        await expectIxToFailWithError(
+            swapUsingConstantPriceFormula(
+                provider.connection,
+                swapper,
+                poolAddress,
+                assets[receiveAssetIndex].address,
+                assets[payAssetIndex].address,
+                payAmount,
+                assets[payAssetIndex].decimals
+            ),
+            "Invalid amount allocatable",
+            swapper,
+        );
+    });
+
+    it('Fail Swap Using "Constant Product" Due to "Invalid amount allocatable"', async () => {
+        const receiveAssetIndex = 0; // Assuming this is an asset index that exists
+        const payAssetIndex = 1; // Assuming this is another asset index that exists
+        // Set a very high pay amount, assuming the pool cannot support this swap
+        const payAmount = 200; // An exaggeratedly high amount for demonstration
+
+        await expectIxToFailWithError(
+            swapUsingConstantProductFormula(
+                provider.connection,
+                swapper,
+                poolAddress,
+                assets[receiveAssetIndex].address,
+                assets[payAssetIndex].address,
+                payAmount,
+                assets[payAssetIndex].decimals
+            ),
+            "insufficient funds",
+            swapper,
+        );
+    });
 
     async function trySwapWithConstantProductFormula(
         receive: {

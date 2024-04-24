@@ -2,10 +2,6 @@
 seeds = true
 skip-lint = false
 
-[toolchain]
-anchor_version = "0.28.0" # `anchor-cli` version to use
-solana_version = "1.16.27" # Solana version to use
-
 [workspace]
 members = [
     "programs/daniel-swap-program",
@@ -15,8 +11,8 @@ members = [
 url = "https://api.apr.dev"
 
 [provider]
-# cluster = "localnet"
-cluster = "devnet"
+cluster = "localnet"
+# cluster = "devnet"
 wallet = "~/.config/solana/id.json"
 
 [programs.localnet]

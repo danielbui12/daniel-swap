@@ -1,6 +1,6 @@
 "use client"
 
-import { Button, Image, Input, Switch, message, notification } from 'antd'
+import { Button, Image, Input, Switch, notification } from 'antd'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import tokenList from '@/app/assets/data/tokens.json'
 import { useConnection, useWallet } from '@solana/wallet-adapter-react'
@@ -8,9 +8,10 @@ import { ArrowDownOutlined } from '@ant-design/icons'
 import BigNumber from "bignumber.js";
 import { CONSTANT_PRICE_TICKET_TO_RATIO, CONSTANT_PRODUCT_TICKET_TO_RATIO, deriveLiquidityPoolPDA, fetchPoolData, numberWDecimals, numberWODecimals, swapUsingConstantPriceFormula, swapUsingConstantProductFormula } from '../utils'
 import {Account as TokenAccount, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { PublicKey, Transaction } from '@solana/web3.js'
+import { PublicKey } from '@solana/web3.js'
 import { createWrappedSolanaIfNeeded } from '../utils/createWrappedSolana'
-import { confirmTransactionFromFrontend, verifyTransaction } from '../utils/transactionSigner'
+import { confirmTransactionInstruction, verifyTransaction } from '../utils/transactionSigner'
+import { asyncInitAccount } from '../utils/initAccount'
 
 function Swap() {
     const { connected, publicKey, wallet, signTransaction } = useWallet();
@@ -100,12 +101,29 @@ function Swap() {
         onFetchPoolData()
     }, [onFetchPoolData])
 
-    const onSwapConstantPrice = async () => {
+    const onSwap = async () => {
         try {
+            const isFailed = await asyncInitAccount(
+                [
+                    new PublicKey(tokenOne.address),
+                    new PublicKey(tokenTwo.address),
+                ],
+                connection,
+                publicKey as PublicKey,
+                {
+                    wallet, signTransaction,
+                    publicKey: publicKey as PublicKey,
+                }
+            );
+            if (isFailed) {
+                notification.error({
+                    message: 'Failed to init account',
+                })
+            }
             const swapAmount = numberWDecimals(Number(tokenOneAmount), tokenOne.decimals);
             const tokenOnePublicKey = new PublicKey(tokenOne.address);
             const ata = getAssociatedTokenAddressSync(tokenOnePublicKey, publicKey as PublicKey);
-            const tokenAccount = await getAccount(connection, ata).catch(() => ({ amount: 0 }))
+            const tokenAccount = await getAccount(connection, ata)
             const isNotEnoughToken = swapAmount.isGreaterThan(new BigNumber(tokenAccount.amount.toString()));
             
             if (tokenOne.address === tokenList[0].address) {
@@ -139,15 +157,10 @@ function Swap() {
                 poolAddress, new PublicKey(tokenTwo.address),
                 new PublicKey(tokenOne.address), swapAmount.toString(),
             );
-
-            const ltsBlock = await connection.getLatestBlockhash();
-            const swapTx = new Transaction({
-                ...ltsBlock,
-                feePayer: publicKey
-            }).add(swapIx)
-            const swapTxSignature = await confirmTransactionFromFrontend(connection, swapTx, {
+            const swapTxSignature = await confirmTransactionInstruction(connection, swapIx, {
                 wallet,
                 signTransaction,
+                publicKey: publicKey as PublicKey
             });
             const isSwapFailed = await verifyTransaction(connection, swapTxSignature)
             if (isSwapFailed) {
@@ -281,7 +294,7 @@ function Swap() {
                 <Button
                     className="flex justify-center items-center bg-[#243056] w-full h-[55px] text-[20px] rounded-[12px] text-[#5981F3] font-bold transition-all duration-300 mb-7 mt-2"
                     disabled={!tokenOneAmount || !connected}
-                    onClick={onSwapConstantPrice}
+                    onClick={onSwap}
                 >Swap</Button>
             </div>
         </>

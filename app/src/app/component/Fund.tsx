@@ -10,6 +10,7 @@ import { Account as TokenAccount, getAccount, getAssociatedTokenAddressSync } fr
 import { PublicKey, Transaction } from '@solana/web3.js'
 import { createWrappedSolanaIfNeeded } from '../utils/createWrappedSolana'
 import { confirmTransactionFromFrontend, verifyTransaction } from '../utils/transactionSigner'
+import { asyncInitAccount } from '../utils/initAccount'
 
 function Fund() {
     const { connected, publicKey, wallet, signTransaction } = useWallet();
@@ -66,6 +67,23 @@ function Fund() {
                 message: 'Please enter a valid amount',
             })
             return;
+        }
+        const isFailed = await asyncInitAccount(
+            [
+                new PublicKey(tokenOne.address),
+                new PublicKey(tokenTwo.address),
+            ],
+            connection,
+            publicKey as PublicKey,
+            {
+                wallet, signTransaction,
+                publicKey: publicKey as PublicKey,
+            }
+        );
+        if (isFailed) {
+            notification.error({
+                message: 'Failed to init account',
+            })
         }
         const neededBalanceTokenOne = numberWDecimals(tokenOneAmount, tokenOne.decimals);
         const wrapSolError = await createWrappedSolanaIfNeeded(

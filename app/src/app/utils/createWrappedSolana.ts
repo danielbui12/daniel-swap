@@ -3,7 +3,7 @@ import { Transaction, SystemProgram } from '@solana/web3.js';
 import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, TOKEN_PROGRAM_ID, createSyncNativeInstruction, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from '@solana/web3.js';
 import BigNumber from 'bignumber.js';
-import { confirmTransactionFromFrontend, verifyTransaction } from './transactionSigner';
+import { ConfirmTxWallet, confirmTransactionFromFrontend, verifyTransaction } from './transactionSigner';
 
 export const createWrappedSolana = async (connection: Connection, owner: PublicKey, amount: number): Promise<Transaction> => {
     const associatedToken = getAssociatedTokenAddressSync(
@@ -32,10 +32,7 @@ export const createWrappedSolanaIfNeeded = async (
     connection: Connection,
     owner: PublicKey,
     expectToWrapAmount: BigNumber,
-    wallet: {
-        wallet: any,
-        signTransaction: any
-    }
+    wallet: ConfirmTxWallet
 ) => {
     const nativeAmount = await connection.getBalance(owner);
     const ata = getAssociatedTokenAddressSync(NATIVE_MINT, owner);

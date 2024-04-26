@@ -1,6 +1,14 @@
-import { Transaction, Connection } from "@solana/web3.js";
+import { Transaction, Connection, TransactionInstruction, PublicKey } from "@solana/web3.js";
 
-export async function confirmTransactionFromFrontend(connection: Connection, transaction: string | Transaction, wallet: any) {
+export interface ConfirmTxWallet {
+    wallet: any,
+    signTransaction: any,
+}
+export async function confirmTransactionFromFrontend(
+    connection: Connection,
+    transaction: string | Transaction,
+    wallet: ConfirmTxWallet,
+) {
     let _transaction = transaction;
     if (typeof transaction === "string") {
         _transaction = Transaction.from(
@@ -8,6 +16,31 @@ export async function confirmTransactionFromFrontend(connection: Connection, tra
         );
     }
     const signedTx = await wallet.signTransaction(_transaction);
+    const confirmTransaction = await connection.sendRawTransaction(
+        signedTx.serialize({ requireAllSignatures: false })
+    );
+    return confirmTransaction;
+}
+
+export interface ConfirmTxWalletWithPublicKey extends ConfirmTxWallet {
+    publicKey: PublicKey;
+} 
+export async function confirmTransactionInstruction(
+    connection: Connection,
+    transactionIx: TransactionInstruction | TransactionInstruction[],
+    wallet: ConfirmTxWalletWithPublicKey
+) {
+    const ltsBlock = await connection.getLatestBlockhash();
+    const transaction = new Transaction({
+        ...ltsBlock,
+        feePayer: wallet.publicKey,
+    })
+    if (Array.isArray(transactionIx)) {
+        transaction.add(...transactionIx)
+    } else {
+        transaction.add(transactionIx)
+    }
+    const signedTx = await wallet.signTransaction(transaction);
     const confirmTransaction = await connection.sendRawTransaction(
         signedTx.serialize({ requireAllSignatures: false })
     );

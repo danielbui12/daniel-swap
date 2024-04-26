@@ -9,8 +9,10 @@ import { getAssociatedTokenAddressSync, mintTo } from "@solana/spl-token";
 import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { MOVE_AUTHORITY, MOVE_PROGRAM_ID } from "../constants";
 import { useWalletModal } from "@solana/wallet-adapter-react-ui";
-import { PublicKey } from '@solana/web3.js';
+import { PublicKey, Transaction } from '@solana/web3.js';
 import Link from "next/link";
+import { getOrCreateAta } from "../utils/getOrCreateAta";
+import { confirmTransactionFromFrontend, verifyTransaction } from "../utils/transactionSigner";
 
 const ReactUIWalletMultiButtonDynamic = dynamic(
     async () => (await import('@solana/wallet-adapter-react-ui')).WalletMultiButton,
@@ -19,14 +21,46 @@ const ReactUIWalletMultiButtonDynamic = dynamic(
 
 function Header() {
     const { connection } = useConnection()
-    const { publicKey, connected } = useWallet()
+    const { publicKey, connected, wallet, signTransaction } = useWallet()
     const { setVisible, visible } = useWalletModal()
     const onRequestMOVE = async () => {
         if (!connected && !visible) {
             setVisible(true);
             return;
         }
-        
+
+        const needToCreateAta = await getOrCreateAta(
+          connection,
+          publicKey as PublicKey,
+          MOVE_PROGRAM_ID,
+          publicKey as PublicKey
+        )
+        if (needToCreateAta.isError) {
+          notification.error({
+            message: 'Failed to create associated token account',
+          })
+          return
+        }
+        if (needToCreateAta.ix) {
+          const ltsBlock = await connection.getLatestBlockhash();
+          const tx = new Transaction({
+            ...ltsBlock,
+            feePayer: publicKey
+          })
+          tx.add(needToCreateAta.ix)
+          const createAtaIx = await confirmTransactionFromFrontend(connection, tx, {
+            wallet,
+            signTransaction,
+          });
+          const isSwapFailed = await verifyTransaction(connection, createAtaIx)
+          if (isSwapFailed) {
+            notification.error({
+              message: "Failed to Create Associated Token Account",
+            })
+            return;
+          }
+        }
+
         const destination = getAssociatedTokenAddressSync(MOVE_PROGRAM_ID, publicKey as PublicKey);        
         await mintTo(
             connection,
